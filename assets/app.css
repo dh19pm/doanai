@@ -1,0 +1,76 @@
+*{
+	margin: 0;
+}
+body
+{
+    background-image: url('images/background.jpg?v=2');
+}
+.wrapper
+{
+    transform: translate(-50%, -50%);
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 550px;
+    height: 550px;
+}
+#game
+{
+    position: relative;
+	display: table;
+    border: 1px solid #ffffff57;
+}
+#game>ul
+{
+	list-style: none;
+    display: table;
+    margin: 0;
+    padding: 0;
+}
+#game>ul>li
+{
+    width: 20px;
+    height: 20px;
+    background: #00000000;
+    border: 1px solid #ffffff57;
+    display: table-cell;
+}
+#game>ul>li[data-val="0"]:hover, #game>ul>li[data-val="0"]:active
+{
+    background-image: url('images/stone.png');
+}
+#game>ul>li[data-val="0"]
+{
+	cursor: pointer;
+}
+#game>ul>li[data-val="1"]
+{
+    background-image: url('images/stone.png');
+}
+#game>ul>li.active
+{
+    background: #f1e091;
+}
+#game>ul>li.here
+{
+    background-image: url(images/player.gif);
+    background-size: 20px 20px;
+}
+#game>ul>li.stop
+{
+	background-image: url('images/stone.png');
+}
+#game>ul>li.start, #game>ul>li.end
+{
+	background: #f00;
+}
+.controller
+{
+	text-align: center;
+}
+.controller>button
+{
+    border: 1px solid #9a8c8c;
+    padding: 5px 20px;
+    background: #dad4b2;
+}
