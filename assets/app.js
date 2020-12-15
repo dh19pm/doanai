@@ -1,171 +1,297 @@
+/*
+ * Code được phát triển bởi Sĩ Ben :)))
+ * @github: https://github.com/dangtiensi
+ */
+
 const game = {
 	limit: 25,
 	array: Array(),
+	chuaxet: Array(),
 	start: {x: 1, y: 1},
 	end: {x: 25, y: 25},
 	open: Array(),
 	close: Array(),
+	dfs: Array(),
+	ready: false,
+	current: {x: 1, y: 1},
 	success: true,
-	taoMeCung: function()
+	win: true,
+	time: 15, // 15 giây
+	createArray: function()
 	{
 		for(let y = 0; y < this.limit; y++)
 		{
+			this.array[y] = Array();
 			for(let x = 0; x < this.limit; x++)
 			{
-				if(typeof this.array[y] == 'undefined')
-					this.array[y] = [];
 				this.array[y][x] = 0;
 			}
 		}
-	},
-	DFS: function(point = {x: 0, y: 0})
-	{
-		let soDuong = 0, current;
-
-		if((point.x+1) <= this.limit && this.diemDung({x: (point.x+1), y: point.y}) == false)
+		for(let y = 0; y < this.limit; y++)
 		{
-			this.open.push({x: (point.x+1), y: point.y});
-			soDuong++;
-		}
-
-		if((point.x-1) > 0 && this.diemDung({x: (point.x-1), y: point.y}) == false)
-		{
-			this.open.push({x: (point.x-1), y: point.y});
-			soDuong++;
-		}
-
-		if((point.y+1) <= this.limit && this.diemDung({x: point.x, y: (point.y+1)}) == false)
-		{
-			this.open.push({x: point.x, y: (point.y+1)});
-			soDuong++;
-		}
-
-		if((point.y-1) > 0 && this.diemDung({x: point.x, y: (point.y-1)}) == false)
-		{
-			this.open.push({x: point.x, y: (point.y-1)});
-			soDuong++;
-		}
-
-		if(soDuong == 0)
-			return this.close;
-
-		if(this.close.length == 0)
-			current = this.start;
-		else
-		{
-			for(let i = 0; i < this.open.length; i++)
+			this.chuaxet[y] = Array();
+			for(let x = 0; x < this.limit; x++)
 			{
-				if(this.isDiem(this.close, this.open[i]) == false)
+				this.chuaxet[y][x] = 0;
+			}
+		}
+	},
+	randomArray: function()
+	{
+		for(let i = 0; i < this.limit; i++)
+		{
+			if((i + 1) % 2 == 0 && i < (this.limit - 1))
+			{
+				for(let j = i; j < (this.limit - i); j++)
 				{
-					current = this.open[i];
-					break;
+					this.array[i][j] = (j % this.randMeCung(2) == 0 ? this.randMeCung() : 1);
+					this.array[this.limit - i - 1][j] = (j % 2 == 0 ? this.randMeCung() : 1);
+				}
+				for(let j = i; j < (this.limit - i); j++)
+				{
+					this.array[j][i] = (j % this.randMeCung(2) == 0 ? this.randMeCung() : 1);
+					this.array[j][this.limit - i - 1] = (j % 2 == 0 ? this.randMeCung() : 1);
 				}
 			}
 		}
-
-		if((current.x !== this.end.x || current.y !== this.end.y) && this.isDiem(this.close, current) == false)
+		do
 		{
-			this.close.push(current);
-			this.xoaDiem(this.open, current);
-			return this.DFS(current);
+			this.end = {x: (this.randMeCung(this.limit - 1) + 1), y: (this.randMeCung(this.limit - 1) + 1)};
 		}
-
-		this.close.push(this.end);
-		return this.close;
+		while(this.stopPoint(this.end) == true || this.tinhKhoangCach(this.start, this.end) <= (this.limit / 2) || this.end.x < (this.limit / 2) || this.end.y < (this.limit / 2));
+	},
+	tinhKhoangCach: function(start = {x: 0, y: 0}, end = {x: 0, y: 0})
+	{
+		return Math.sqrt(Math.pow((end.x - start.x), 2) + Math.pow((end.y - start.y), 2));
+	},
+	randMeCung: function(max = 1)
+	{
+		return Math.floor(Math.random() * Math.floor(max + 1));
 	},
 	BFS: function(point = {x: 0, y: 0})
 	{
-		let soDuong = 0, min;
+		if(this.close.length === 0)
+			this.close.push({
+				range: this.tinhKhoangCach(this.start, this.end),
+				parent_x: 0,
+				parent_y: 0,
+				x: this.start.x,
+				y: this.start.y
+			});
 
-		if((point.x+1) <= this.limit && this.diemDung({x: (point.x+1), y: point.y}) == false)
+		if((point.x+1) <= this.limit && this.stopPoint({x: (point.x+1), y: point.y}) == false && this.isPoint(this.open, {x: (point.x+1), y: point.y}) == false)
 		{
-			this.open.push({x: (point.x+1), y: point.y});
-			soDuong++;
+			this.open.push({
+				range: this.tinhKhoangCach({x: (point.x+1), y: point.y}, this.end),
+				parent_x: point.x,
+				parent_y: point.y,
+				x: (point.x+1),
+				y: point.y
+			});
 		}
 
-		if((point.x-1) > 0 && this.diemDung({x: (point.x-1), y: point.y}) == false)
+		if((point.x-1) > 0 && this.stopPoint({x: (point.x-1), y: point.y}) == false && this.isPoint(this.open, {x: (point.x-1), y: point.y}) == false)
 		{
-			this.open.push({x: (point.x-1), y: point.y});
-			soDuong++;
+			this.open.push({
+				range: this.tinhKhoangCach({x: (point.x-1), y: point.y}, this.end),
+				parent_x: point.x,
+				parent_y: point.y,
+				x: (point.x-1),
+				y: point.y
+			});
 		}
 
-		if((point.y+1) <= this.limit && this.diemDung({x: point.x, y: (point.y+1)}) == false)
+		if((point.y+1) <= this.limit && this.stopPoint({x: point.x, y: (point.y+1)}) == false && this.isPoint(this.open, {x: point.x, y: (point.y+1)}) == false)
 		{
-			this.open.push({x: point.x, y: (point.y+1)});
-			soDuong++;
+			this.open.push({
+				range: this.tinhKhoangCach({x: point.x, y: (point.y+1)}, this.end),
+				parent_x: point.x,
+				parent_y: point.y,
+				x: point.x,
+				y: (point.y+1)
+			});
 		}
 
-		if((point.y-1) > 0 && this.diemDung({x: point.x, y: (point.y-1)}) == false)
+		if((point.y-1) > 0 && this.stopPoint({x: point.x, y: (point.y-1)}) == false && this.isPoint(this.open, {x: point.x, y: (point.y-1)}) == false)
 		{
-			this.open.push({x: point.x, y: (point.y-1)});
-			soDuong++;
+			this.open.push({
+				range: this.tinhKhoangCach({x: point.x, y: (point.y-1)}, this.end),
+				parent_x: point.x,
+				parent_y: point.y,
+				x: point.x,
+				y: (point.y-1)
+			});
 		}
 
-		if(soDuong == 0)
-			return this.close;
+		let min = this.searchMin(this.open, point);
 
-		if(this.close.length == 0)
-			this.close.push(this.start);
-
-		min = this.timMin(this.open);
-
-		while(this.isDiem(this.close, min) !== false)
+		while(this.isPoint(this.close, min) == true)
 		{
-			this.xoaDiem(this.open, min);
-			min = this.timMin(this.open);
+			min = this.searchMin(this.open, point);
+			this.removePoint(this.open, min);
 
-			if(this.isDiem(this.close, min) == true && soDuong == 1)
+			if(this.open.length == 0)
 			{
 				this.success = false;
-				return this.close;
+				return [];
 			}
 		}
 
-		if((min.x !== this.end.x || min.y !== this.end.y) && this.isDiem(this.close, min) == false)
+		if(min.x !== this.end.x || min.y !== this.end.y)
 		{
 			this.close.push(min);
 			return this.BFS(min);
 		}
 
-		this.close.push(this.end);
+		this.close.push({
+			range: 0,
+			parent_x: point.x,
+			parent_y: point.y,
+			x: this.end.x,
+			y: this.end.y
+		});
+
 		return this.close;
 	},
-	loTrinh: function()
+	DFS: function(point = {x: 0, y: 0})
 	{
-		const option = document.getElementById('option');
-		let duongdi;
-		if(option.value == 'bfs')
+
+		this.chuaxet[point.y - 1][point.x - 1] = 1;
+
+		if((point.x+1) <= this.limit && this.stopPoint({x: (point.x+1), y: point.y}) == false && this.chuaxet[point.y - 1][point.x] == 0)
 		{
-			duongdi = this.BFS(this.start);
+			this.dfs.push({
+				parent_x: point.x,
+				parent_y: point.y,
+				x: (point.x+1),
+				y: point.y
+			});
 		}
-		else
+
+		if((point.x-1) > 0 && this.stopPoint({x: (point.x-1), y: point.y}) == false && this.chuaxet[point.y - 1][point.x - 2] == 0)
 		{
-			duongdi = this.DFS(this.start);
+			this.dfs.push({
+				parent_x: point.x,
+				parent_y: point.y,
+				x: (point.x-1),
+				y: point.y
+			});
 		}
-		return this.close;
+
+		if((point.y+1) <= this.limit && this.stopPoint({x: point.x, y: (point.y+1)}) == false && this.chuaxet[point.y][point.x - 1] == 0)
+		{
+			this.dfs.push({
+				parent_x: point.x,
+				parent_y: point.y,
+				x: point.x,
+				y: (point.y+1)
+			});
+		}
+
+		if((point.y-1) > 0 && this.stopPoint({x: point.x, y: (point.y-1)}) == false && this.chuaxet[point.y - 2][point.x - 1] == 0)
+		{
+			this.dfs.push({
+				parent_x: point.x,
+				parent_y: point.y,
+				x: point.x,
+				y: (point.y-1)
+			});
+		}
+
+		let i = 0, stop = false, uutien = false, current;
+
+		while(stop == false)
+		{
+			if(i == this.dfs.length - 1)
+				stop = true;
+
+			current = this.dfs[i];
+
+			if(this.chuaxet[current.y - 1][current.x - 1] == 0)
+				stop = true;
+
+			i++;
+		}
+
+		if(this.chuaxet[current.y - 1][current.x - 1] == 1)
+		{
+			this.success = false;
+			return [];
+		}
+
+		if((current.x !== this.end.x || current.y !== this.end.y))
+			return this.DFS(current);
+
+		return this.dfs;
+	},
+	loTrinh: function(array = [])
+	{
+		if(this.array.length == 0)
+			return [];
+		let loTrinh = Array(), current = this.end, stop = false;
+		while(stop == false)
+		{
+			for(let i = 0; i < array.length; i++)
+			{
+				if(current.x == array[i].x && current.y == array[i].y)
+				{
+					loTrinh.push(current);
+					current = {x: array[i].parent_x, y: array[i].parent_y};
+					break;
+				}
+			}
+			if(current.x == this.start.x && current.y == this.start.y)
+			{
+				loTrinh.push(this.start);
+				stop = true;
+			}
+		}
+		loTrinh.reverse();
+		return loTrinh;
 	},
 	reset: function()
 	{
 		this.open = Array();
 		this.close = Array();
+		this.dfs = Array();
 		this.success = true;
-	},
-	/* Heuristic */
-	timMin: function(arr)
-	{
-		let t = this;
-		let min = this.khoangCach(this.start, this.end), point = this.start;
-		arr.forEach(function(item, index)
+		for(let y = 0; y < this.limit; y++)
 		{
-			if(t.khoangCach(item, t.end) < min)
-			{
-				min = t.khoangCach(item, t.end);
-				point = item;
-			}
-		});
-		return point;
+			this.chuaxet[y] = Array();
+			for(let x = 0; x < this.limit; x++)
+				this.chuaxet[y][x] = 0;
+		}
 	},
-	xoaDiem: function(arr, point = {x: 0, y: 0})
+	searchMin: function(arr = {}, current = {})
+	{
+		if(arr.length === 0)
+			return null;
+
+		let t = this, point = t.start, min = null;
+
+		for(let i = 0; i < arr.length; i++)
+		{
+			if(arr[i].parent_x == current.x && arr[i].parent_y == current.y)
+			{
+				if(min == null)
+				{
+					min = arr[i].range;
+					point = arr[i];
+				}
+				if(arr[i].range < min)
+				{
+					min = arr[i].range;
+					point = arr[i];
+				}
+			}
+		}
+
+		if(point !== t.start)
+			return point;
+
+		return arr[0];
+	},
+	removePoint: function(arr, point = {x: 0, y: 0})
 	{
 		arr.forEach(function(item, index)
 		{
@@ -173,7 +299,7 @@ const game = {
 				arr.splice(index, 1);
 		});
 	},
-	isDiem: function(arr = Array(), point = {x: 0, y: 0})
+	isPoint: function(arr = Array(), point = {x: 0, y: 0})
 	{
 		for(let i = 0; i < arr.length; i++)
 			if(typeof arr[i] !== 'undefined')
@@ -181,78 +307,222 @@ const game = {
 					return true;
 		return false;
 	},
-	diemDung: function(point = {x: 0, y: 0})
+	stopPoint: function(point = {x: 0, y: 0})
 	{
 		if(this.array[point.y-1][point.x-1] == 1)
 			return true;
 		return false;
 	},
-	khoangCach: function(start = {x: 0, y: 0}, end = {x: 0, y: 0})
+	outputArray: function()
 	{
-		return Math.pow((start.x - end.x), 2) + Math.pow((start.y - end.y), 2);
-	},
-	randMeCung: function(max = 1)
-	{
-		return Math.floor(Math.random() * Math.floor(max + 1));
-	},
-	xuatMeCung: function()
-	{
+		let t = this;
 		let content = document.getElementById("game");
 		content.innerHTML = '';
 		let dong = '';
-		this.array.forEach(function(item, y){
-			item.forEach(function(val, x){
-				dong += '<li title="(X,Y) => (' + (x+1) + ',' + (y+1) + ')" data-x="' + (x+1) + '" data-y="' + (y+1) + '" data-val="' + val + '"></li>';
+		t.array.forEach(function(item, y)
+		{
+			item.forEach(function(val, x)
+			{
+				dong += '<li title="x: ' + (x+1) + ', y: ' + (y+1) + '" data-x="' + (x+1) + '" data-y="' + (y+1) + '" data-val="' + val + '"></li>';
 			});
 			content.innerHTML += '<ul>' + dong + '</ul>';
 			dong = '';
 		});
+		document.querySelector('#game>ul>li[data-x="' + t.start.x + '"][data-y="' + t.start.y + '"]').classList.add('start');
+		document.querySelector('#game>ul>li[data-x="' + t.start.x + '"][data-y="' + t.start.y + '"]').classList.add('here');
+		document.querySelector('#game>ul>li[data-x="' + t.end.x + '"][data-y="' + t.end.y + '"]').classList.add('end');
+	},
+	runTimer: function()
+	{
+		let t = this;
+	    var timer = t.time, minutes, seconds, display = document.getElementById('time');
+	    let inter = setInterval(() =>
+	    {
+	        minutes = parseInt(timer / 60, 10);
+	        seconds = parseInt(timer % 60, 10);
+
+	        minutes = minutes < 10 ? "0" + minutes : minutes;
+	        seconds = seconds < 10 ? "0" + seconds : seconds;
+
+	        if(minutes >= 0 && seconds >= 0)
+	        	display.textContent = minutes + ":" + seconds;
+
+	        if(minutes == 0 && seconds == 0)
+	       	{
+	       		t.win = false;
+	       		alert('Bạn đã thua! Vui lòng xem lại đường đi để thắng.');
+	       		document.querySelector('#game>ul>li[data-x="' + t.current.x + '"][data-y="' + t.current.y + '"]').classList.remove('here');
+	       		document.getElementById('setting').classList.remove('hidden');
+	       		document.getElementById('startgame').classList.add('hidden');
+				t.runGiaiThuat();
+	    		clearInterval(inter);
+	       	}
+
+	        if (--timer < 0)
+	            timer = t.time;
+	    }, 1000);
+	},
+	newGame: function()
+	{
+		document.getElementById('new').onclick = () =>
+		{
+			let t = this;
+
+			let rand = document.getElementById('random'), size = document.getElementById('size');
+
+			if(!isNaN(parseInt(size.value)))
+			{
+				this.limit = parseInt(size.value);
+			}
+
+			t.createArray();
+
+			if(rand.value == '1')
+			{
+				t.randomArray();
+			}
+
+			t.outputArray();
+
+			if(rand.value == '0')
+			{
+				const point = document.querySelectorAll('#game>ul>li[data-val="0"]');
+				point.forEach(function(item, index)
+				{
+					item.onclick = () => 
+					{
+
+						if(t.array[item.dataset.y-1][item.dataset.x-1] == 1)
+							t.array[item.dataset.y-1][item.dataset.x-1] = 0;
+						else
+							t.array[item.dataset.y-1][item.dataset.x-1] = 1;
+
+						console.log("vitri = (" + item.dataset.x + "," + item.dataset.y + ")");
+						item.classList.toggle('stop');
+					};
+				});
+			}
+
+			document.getElementById('menu').classList.add('hidden');
+			document.getElementById('controller').classList.remove('hidden');
+			document.getElementById('game').classList.remove('hidden');
+		};
+
+	},
+	runGiaiThuat: function()
+	{
+		let t = this;
+
+		t.reset();
+
+		let opt = document.getElementById('option');
+
+		if(opt.value == "")
+		{
+			alert("Vui lòng chọn giải thuật!");
+			return false;
+		}
+		
+		let step = (opt.value == 'dfs' ? t.DFS(t.start) : t.BFS(t.start));
+
+		if(t.success == false)
+		{
+			alert("Mê cung không có đường để đi!");
+			return false;
+		}
+
+		console.log(step);
+		console.log(t.chuaxet);
+
+		step = t.loTrinh(step);
+
+		step.forEach(function(item, index)
+		{
+			setTimeout(() =>
+			{
+				if(step[index-1] !== undefined)
+				{
+					let active = document.querySelector('#game>ul>li[data-x="' + step[index-1].x + '"][data-y="' + step[index-1].y + '"]');
+					active.classList.add('active');
+					active.classList.remove('here');
+				}
+				document.querySelector('#game>ul>li[data-x="' + item.x + '"][data-y="' + item.y + '"]').classList.add('here');
+				if(item.x == t.end.x && item.y == t.end.y)
+					t.win = true;
+			}, 200*index);
+		});
 	},
 	run: function()
 	{
-		this.taoMeCung();
-		this.xuatMeCung();
-		let qrStart = document.querySelector('#game>ul>li[data-x="' + this.start.x + '"][data-y="' + this.start.y + '"]'), qrEnd = document.querySelector('#game>ul>li[data-x="' + this.end.x + '"][data-y="' + this.end.y + '"]');
-		qrStart.classList.add('start');
-		qrEnd.classList.add('end');
-		const point = document.querySelectorAll('#game>ul>li[data-val="0"]');
-		point.forEach(function(item, index)
+		let t = this;
+		document.getElementById('test').onclick = () =>
 		{
-			item.onclick = () => 
-			{
-				if(game.array[item.dataset.y-1][item.dataset.x-1] == 1)
-					game.array[item.dataset.y-1][item.dataset.x-1] = 0;
-				else
-					game.array[item.dataset.y-1][item.dataset.x-1] = 1;
-				console.log("vitri = (" + item.dataset.x + "," + item.dataset.y + ")");
-				item.classList.toggle('stop');
-			};
-		});
+			t.runGiaiThuat();
+		};
+		document.getElementById('reset').onclick = () =>
+		{
+			window.location.reload();
+		};
 		document.getElementById('run').onclick = () =>
 		{
-			this.reset();
-			let duongdi = this.loTrinh();
-			if(this.success == false)
+			let opt = document.getElementById('option');
+
+			if(opt.value == "")
 			{
-				alert("Không có đường đi!");
+				alert("Vui lòng chọn giải thuật!");
+				return false;
 			}
-			duongdi.forEach(function(item, index)
+
+			if(t.win == false)
 			{
-				setTimeout(() =>
+				alert('Lượt chơi chưa kết thúc!');
+				return false;
+			}
+			t.current = {x: 1, y: 1};
+			alert('Nhấn nút [w], [S], [A], [D] để di chuyển player!');
+			t.outputArray();
+			document.getElementById('setting').classList.toggle('hidden');
+			document.getElementById('startgame').classList.toggle('hidden');
+			game.runTimer();
+			window.onkeypress = (e) =>
+			{
+				if(t.win == false)
+					return false;
+
+				if(e.code == "KeyA" && (t.current.x - 1) > 0 && this.stopPoint({x: (t.current.x - 1), y: t.current.y}) == false)
 				{
-					if(duongdi[index-1] !== undefined)
-					{
-						let active = document.querySelector('#game>ul>li[data-x="' + duongdi[index-1].x + '"][data-y="' + duongdi[index-1].y + '"]');
-						active.classList.add('active');
-						active.classList.remove('here');
-					}
-					document.querySelector('#game>ul>li[data-x="' + item.x + '"][data-y="' + item.y + '"]').classList.add('here');
-					console.log('Đã đi qua vị trí (x,y) => (' + item.x + ',' + item.y + ')');
-				}, 100*index);
-			});
-			console.log(this.open);
-			console.log(this.close);
+					document.querySelector('#game>ul>li[data-x="' + t.current.x + '"][data-y="' + t.current.y + '"]').classList.remove('here');
+					t.current = {x: (t.current.x - 1), y: t.current.y};
+				}
+
+				if(e.code == "KeyD" && (t.current.x + 1) <= this.limit && this.stopPoint({x: (t.current.x + 1), y: t.current.y}) == false)
+				{
+					document.querySelector('#game>ul>li[data-x="' + t.current.x + '"][data-y="' + t.current.y + '"]').classList.remove('here');
+					t.current = {x: (t.current.x + 1), y: t.current.y};
+				}
+
+				if(e.code == "KeyW" && (t.current.y - 1) > 0 && this.stopPoint({x: t.current.x, y: (t.current.y - 1)}) == false)
+				{
+					document.querySelector('#game>ul>li[data-x="' + t.current.x + '"][data-y="' + t.current.y + '"]').classList.remove('here');
+					t.current = {x: t.current.x, y: (t.current.y - 1)};
+				}
+
+				if(e.code == "KeyS" && (t.current.y + 1) <= this.limit && this.stopPoint({x: t.current.x, y: (t.current.y + 1)}) == false)	
+				{
+					document.querySelector('#game>ul>li[data-x="' + t.current.x + '"][data-y="' + t.current.y + '"]').classList.remove('here');
+					t.current = {x: t.current.x, y: (t.current.y + 1)};
+				}
+
+				document.querySelector('#game>ul>li[data-x="' + t.current.x + '"][data-y="' + t.current.y + '"]').classList.add('here');
+
+				if(t.current.x == t.end.x && t.current.y == t.end.y)
+				{
+					alert('chúc mừng! bạn đã giành thắng.');
+					window.location.reload();
+				}
+			};
 		};
 	}
 };
+game.newGame();
 game.run();
