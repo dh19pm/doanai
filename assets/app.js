@@ -372,7 +372,13 @@ const game = {
 
 			if(!isNaN(parseInt(size.value)))
 			{
-				this.limit = parseInt(size.value);
+				t.limit = parseInt(size.value);
+			}
+
+			if(t.limit < 5 || t.limit > 25)
+			{
+				alert('Vui lòng nhập kích thước mê cung >= 5 và <= 25');
+				return false;
 			}
 
 			t.createArray();
